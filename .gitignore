@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+
+# private: anything with my student ID
+*.local.json
+AGENTS.md
+homework*/submission/
+homework*/**/PR_HW*_*_[0-9]*.pdf
+
+# LaTeX build files
+homework*/PR_HW*/report/report.*
+
+# local only
+material/PR_Set*.md
+homework1/archive/
