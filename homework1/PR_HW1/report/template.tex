@@ -1,0 +1,162 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper,hmargin=18mm,top=15mm,bottom=14mm,headheight=12pt,headsep=4mm,footskip=7mm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\usepackage{graphicx,booktabs,array,caption,fancyhdr,titlesec,listings,xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setmainfont{STIXTwoText}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
+\setmathfont{STIXTwoMath-Regular.otf}
+\setsansfont{NotoSansCJK-Regular.ttc}[Path=/usr/share/fonts/opentype/noto/,FontIndex=3,BoldFont=NotoSansCJK-Bold.ttc,BoldFeatures={FontIndex=3}]
+\setmonofont{Inconsolatazi4}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-Bold,Scale=MatchLowercase]
+\setCJKmainfont{NotoSerifCJK-Regular.ttc}[Path=/usr/share/fonts/opentype/noto/,FontIndex=3,BoldFont=NotoSerifCJK-Bold.ttc,BoldFeatures={FontIndex=3}]
+\setCJKsansfont{NotoSansCJK-Regular.ttc}[Path=/usr/share/fonts/opentype/noto/,FontIndex=3,BoldFont=NotoSansCJK-Bold.ttc,BoldFeatures={FontIndex=3}]
+\setCJKmonofont{NotoSansCJK-Regular.ttc}[Path=/usr/share/fonts/opentype/noto/,FontIndex=8]
+
+\hypersetup{pdftitle={Pattern Recognition Assignment 1},pdfauthor={蔡秀吉<<pdfsid>>}}
+\linespread{1.25}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{1pt}
+\titleformat{\section}{\sffamily\bfseries\normalsize}{\thesection}{0.8em}{}
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+\titleformat{\subsection}{\sffamily\bfseries\small}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+\captionsetup{font=small,labelfont=bf,labelsep=quad,singlelinecheck=false,skip=3pt}
+\captionsetup[figure]{name=圖}
+\captionsetup[table]{name=表,position=top}
+\setlength{\textfloatsep}{7pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
+\renewcommand{\arraystretch}{1.05}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Pattern Recognition, NYCU Fall 2026}
+\fancyhead[R]{\small Assignment \#1}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\newcommand{\fig}[1]{\includegraphics[width=\linewidth]{../results/figures/#1.pdf}}
+
+\begin{document}
+{\sffamily\bfseries\large 線性特徵空間實驗}\par
+\vspace{1pt}
+{\small 蔡秀吉<<sid>>　hctsai@linux.com}\par
+\vspace{2pt}
+\suppressfloats[t]
+
+\section{方法}
+\noindent 合成資料依題目產生，三類各 100 筆，平均數為 $\mu_1=(2,2,0)^\top$、$\mu_2=(-2,2,0)^\top$、$\mu_3=(0,-2,0)^\top$，三類共用 $\Sigma_{\mathrm{signal}}$，後面再接上 $q$ 維獨立的 $\mathcal N(0,0.5)$ 雜訊（$q=0$ 到 100）。不同的 $q$ 共用同一批亂數，只差取了幾欄。訓練集與測試集依類別分層抽出，比較 50/50 與 20/80 兩種比例。每個設定重複 20 次，每次重新產生資料與分割，文中的數字是 20 次的平均。平均數、共變異數、標準化、PCA 與 LDA 都只用訓練集估計，再套用到測試集。
+
+1-NN 以歐氏距離找最近的訓練點。訓練準確率讓訓練點和自己比對，所以一定是 100\%，圖~2 另外畫出排除自己的 leave-one-out 準確率。第二個分類器（下文稱 MD）把樣本分給 Mahalanobis 距離最近的類別平均數：
+\[
+d_c^2(x)=(x-\hat\mu_c)^\top\hat\Sigma_c^{-1}(x-\hat\mu_c),
+\]
+其中 $\hat\mu_c$ 與 $\hat\Sigma_c$ 是第 $c$ 類的樣本平均數與共變異數（除以該類的訓練筆數 $n_c$）。這是講義中的最近平均數分類器，每類用自己的共變異數。$\hat\Sigma_c$ 的秩最多是 $n_c-1$，維度 $d\ge n_c$ 時一定奇異，這時改用擬反矩陣 $\hat\Sigma_c^{+}$。
+
+PCA 在訓練集上分解 $\hat\Sigma=V\Lambda V^\top$，保留特徵值最大的 $k$ 個方向，並加入 ridge：
+\[
+z=(\Lambda_k+\gamma I)^{-1/2}V_k^\top(x-\hat\mu),\qquad \gamma\in\{0,\ 0.01,\ 0.1,\ 1,\ 10\}.
+\]
+$\gamma=0$ 是一般的 PCA 白化，只在保留的特徵值都大於 0 時有定義。LDA 使用講義的散布矩陣 $S_w$ 與 $S_b$，解 $S_bw=\rho\,(S_w+\gamma I)w$ 後取前 $C-1=2$ 個方向。$\gamma>0$ 時即 regularized LDA，下文寫作 rLDA。$S_w$ 奇異而 $\gamma=0$ 時，只在 $S_w$ 的值域內求解。估計與分類都以 NumPy 寫成，scikit-learn 只用來載入 Iris。附錄的 \texttt{check\_hw1.py} 把各項計算和直接公式、SciPy 及 scikit-learn 對照，結果一致。
+
+\section{合成資料的投影（第 1 題）}
+\begin{figure}[!htb]
+\fig{fig1_views}
+\caption{第一次重複產生的合成資料。(a)--(d) 是四個二維投影，曲線為各類在該投影上的 Mahalanobis 距離 1、2、3；(d) 的兩個方向是 103 維空間中隨機抽出的正交單位向量。(e) 只畫前三維，橢球為各類的 95\% 信賴橢球。}
+\end{figure}
+\noindent 圖~1(a)--(d) 是同一份 103 維資料在四個平面上的投影。(a) 的 $(x_1,x_2)$ 平面含有全部的類別資訊，三類分得很開，橢圓因 $x_1$ 與 $x_2$ 正相關而往右上傾斜。在 (b) 的 $(x_2,x_3)$ 上，類別 1 與 2 的 $x_2$ 平均都是 2，兩群重疊。$x_3$ 在三類的分布相同，對分類沒有幫助。(c) 的雜訊軸只有三類共同的散布。(d) 是隨機方向，投影幾乎全是雜訊，三類疊在一起。圖~1(e) 是前三維與 95\% 信賴橢球，也就是 Mahalanobis 距離平方不超過 $\chi^2_3(0.95)=$ <<chi3>> 的範圍，三類落在橢球內的點分別有 <<in1>>、<<in2>>、<<in3>> 個，接近期望的 95 個。這些都和題目的設定一致，類別資訊只在 $(x_1,x_2)$。
+
+\section{Hughes 現象（第 2 題）}
+\begin{figure}[!htb]
+\fig{fig2_hughes}
+\caption{合成資料加入 $q$ 維雜訊後的準確率，曲線為 20 次重複的平均，色帶為 $\pm1$ 標準差。灰色區域是 $d=3+q\ge n_c$，各類共變異數矩陣奇異，MD 改用擬反矩陣。}
+\end{figure}
+\noindent 加入 $q$ 維雜訊後（圖~2），50/50 的 1-NN 測試準確率從 <<nnq0_50>>\% 慢慢降到 <<nnq100_50>>\%。MD 從 <<mdq0_50>>\% 很快掉到 $q=$ <<mdargmin_50>> 的 <<mdmin_50>>\%，同時訓練準確率升到 100\%，是典型的過度擬合。20/80 時 MD 更早，在 $q=$ <<mdargmin_20>> 就掉到 <<mdmin_20>>\%，1-NN 在 $q=100$ 則為 <<nnq100_20>>\%。
+
+這符合預期。加入的雜訊對三類都一樣，理論上最好的分類器不受影響，準確率下降完全來自用有限樣本估計參數。MD 每類要用 $n_c$ 筆資料估計 $d(d+1)/2$ 個共變異數參數，$d$ 接近 $n_c$ 時最小特徵值趨近 0，取反矩陣後會把雜訊大幅放大，所以最低點正好落在最後一個可逆的維度 $d=n_c-1$（50/50 為 $q=$ <<mdargmin_50>>，20/80 為 $q=$ <<mdargmin_20>>）。訓練樣本愈少，這個點來得愈早。1-NN 不估計參數，下降來自距離本身：$q=100$ 時，雜訊對距離平方的貢獻平均為 100，在不同訓練點之間的起伏約為 <<noisesd>>，已經和類別平均數之間的距離平方（16 或 20）同一量級，最近鄰愈來愈常由雜訊決定。
+
+灰色區域裡 MD 只能用擬反矩陣，它只看各類訓練樣本所在的子空間。每個訓練點到自己類別的距離平方固定是 $n_c-1$，到其他類別的距離卻略去了子空間以外的部分，所以訓練準確率反而下滑，20/80 在 $q\ge$ <<mdtrzero_20>> 時是 0\%。測試準確率在這一段回升，50/50 在 $q=100$ 回到 <<mdq100_50>>\%。$\gamma=0.01$ 的 ridge 版本也有類似的回升（圖~3(f)），兩者都遠低於只用 3 維時的 <<mdq0_50>>\%。
+
+\section{PCA 白化與 ridge（第 3 題）}
+\begin{figure}[!htb]
+\fig{fig3_pca}
+\caption{合成資料（$q=100$，103 維）的 PCA 實驗，曲線為 20 次重複的平均。(a) 特徵值由大到小，點線為母體值。(b)(c) $\gamma=0$ 的 PCA 白化後保留前 $k$ 個成分，較淺的顏色為 20/80。(d)(e) 白化時使用不同的 $\gamma$，50/50。(f) 不做 PCA，把 $\gamma I$ 加在 MD 的共變異數矩陣上，50/50。灰色區域表示各類共變異數矩陣奇異。}
+\end{figure}
+\noindent 圖~3(a) 是 $q=100$ 時 103 維資料的特徵值。母體的前兩個特徵值為 <<pop1>> 與 <<pop2>>，方向在 $(x_1,x_2)$ 平面，其餘 101 個都是 0.5。50/50 訓練集估出的這 101 個值卻從 <<s3>> 一路降到 <<slast>>，樣本愈少散得愈開，20/80 的訓練集只有 <<rank20>> 個非零特徵值。
+
+保留前 $k$ 個主成分再分類（圖~3(b)(c)），準確率在 $k=2$ 附近最高（1-NN <<pnn2>>\%、MD <<pmd2>>\%），之後隨 $k$ 增加而下降，形成講義中先升後降的 Hughes 曲線。PCA 沒有用到標籤，但這份資料變異最大的兩個方向剛好是類別分開的方向，所以 $k=2$ 就幾乎找回全部的資訊，這符合預期。$k$ 超過 $n_c$ 之後 MD 再次只能用擬反矩陣，訓練準確率也和第 2 題一樣下滑。
+
+白化對 1-NN 的傷害比我預期的大。$k=100$ 時，不白化的 1-NN 還有 <<pnnplain100>>\%，白化後剩 <<pnn100_0>>\%。白化把每個成分除以 $\sqrt{\hat\lambda_j}$，而小特徵值被嚴重低估（最小 <<slast>>，真實值 0.5），測試點在這些方向的變異數約為訓練點的 <<amp>> 倍，距離幾乎由雜訊決定。Ridge 把分母改成 $\sqrt{\hat\lambda_j+\gamma}$，限制了放大的倍率。$k=100$ 時 $\gamma=0.01$、0.1、1、10 分別回到 <<pnn100_001>>\%、<<pnn100_01>>\%、<<pnn100_1>>\%、<<pnn100_10>>\%（圖~3(d)），$\gamma$ 愈大愈接近不白化。$k=2$ 時各個 $\gamma$ 都在 <<pnnk2lo>>\%--<<pnnk2hi>>\%，幾乎沒有代價。20/80 的趨勢相同。
+
+MD 則完全不受 PCA 中 ridge 的影響。在 $\hat\Sigma_c$ 可逆的 $k\le49$，五個 $\gamma$ 與不白化的曲線完全重合（圖~3(e)），因為 MD 會在轉換後重新估計共變異數，任何可逆的縮放都會被抵消。PCA 對 MD 的幫助只來自選了哪 $k$ 個方向。若把 $\gamma I$ 直接加在 MD 的共變異數上，也就是講義的 $\hat\Sigma_c+\gamma I$（圖~3(f)），結果就不同了。$q=100$ 時 $\gamma=0$ 為 <<ridge100_0>>\%，$\gamma=1$ 與 10 為 <<ridge100_1>>\% 與 <<ridge100_10>>\%，過度擬合明顯延後，和講義 ridge 與 Hughes 現象的圖一致。
+
+\section{LDA 與 rLDA（第 4 題）}
+\begin{figure}[!htb]
+\fig{fig4_lda}
+\caption{合成資料（$q=100$）的 LDA。(a) 取兩個 LDA 方向後的測試準確率，20 次重複的平均，水平線為 PCA2（PCA 白化取 2 維）後接 MD，較淺的線為 20/80。(b)--(d) 第一次重複、50/50 的二維投影，空心點為訓練資料，實心點為測試資料。}
+\end{figure}
+\noindent 取兩個 LDA 方向再分類（圖~4(a)）。50/50 時不加 ridge 的 LDA 接 MD 只有 <<lda_0>>\%，比 PCA2 的 <<pmd2>>\% 低 <<ldagap>> 個百分點。$\gamma=0.01$、0.1、1、10 時升到 <<lda_001>>\%、<<lda_01>>\%、<<lda_1>>\%、<<lda_10>>\%，最後和 PCA2 相當。20/80 的趨勢相同，從 <<lda20_0>>\% 升到 <<lda20_10>>\%，PCA2 為 <<pmd2_20>>\%。表~1 整理了合成資料的主要結果。
+
+\begin{table}[!htb]
+\caption{合成資料的測試準確率（\%，20 次重複的平均 $\pm$ 標準差）。PCA2 與 LDA 都取 2 維，再接表中的分類器。加 100 維雜訊時 MD 的共變異數奇異，使用擬反矩陣。}
+\centering\small
+\begin{tabular}{llcccccc}
+\toprule
+分割 & 分類器 & 原始 3 維 & 加 100 維雜訊 & PCA2 & LDA $\gamma=0$ & rLDA $\gamma=1$ & rLDA $\gamma=10$\\
+\midrule
+<<table1>>
+\bottomrule
+\end{tabular}
+\end{table}
+
+我原本以為用到標籤的 LDA 會比 PCA 好，結果相反。103 維的 $S_w$ 只由 147 個自由度估計，最小特徵值被低估到約 <<swmin>>（真實值 0.5），LDA 於是挑中類別平均數碰巧有差異的雜訊方向。圖~4(c) 可以看得很清楚，訓練點擠成三個緊密的群（訓練準確率 100\%），測試點卻散得很開。(b) 的 PCA2 與 (d) 的 rLDA 沒有這種落差。兩個 LDA 方向落在 $(x_1,x_2)$ 平面的程度（夾角餘弦平方的平均）只有 <<ov_0>>，$\gamma=1$ 與 10 時升到 <<ov_1>> 與 <<ov_10>>，PCA2 為 <<ovpca>>。Ridge 讓 LDA 回到真正的區分方向，這和講義說 regularized LDA 適合小樣本的說法一致。
+
+\section{Iris 資料（第 5 題）}
+\begin{figure}[!htb]
+\fig{fig5_iris}
+\caption{Iris 加入 100 維 $\mathcal N(0,\sigma^2)$ 雜訊，分類器皆為 MD，曲線為 20 次重複的平均，較淺的顏色是四個特徵標準化後的結果。(a)(b) $\sigma^2=0.5$ 時逐步加入雜訊。(c) 50/50 訓練集的特徵值。(d)(e) $\sigma^2=0.5$、50/50 的 PCA 白化。(f) $q=100$ 時測試準確率隨 $\sigma^2$ 的變化，rLDA 的 $\gamma=1$。灰色區域表示各類共變異數矩陣奇異。}
+\end{figure}
+\noindent Iris 有 150 筆、四個特徵、三類，50/50 時每類只有 25 筆訓練資料。我在四個特徵後加上 100 維 $\mathcal N(0,\sigma^2)$ 雜訊，$\sigma^2$ 從 0.01 到 10 取 10 個值，並比較原始尺度與 z-score 標準化（只標準化四個特徵，參數取自訓練集）。依題目只用 MD 分類器。
+
+$\sigma^2=0.5$ 時重做第 2 題（圖~5(a)(b)）。50/50 的測試準確率從 <<iq0_50>>\% 降到最後一個可逆維度 $q=$ <<iqarg_50>> 的 <<iqlast_50>>\%。和合成資料不同，進入灰色區域後沒有回升，$q=100$ 時只剩 <<iq100_o>>\%。原始與標準化兩條曲線在可逆範圍內完全重合，10 個 $\sigma^2$ 的結果在這個範圍內也完全相同。這點一開始出乎我的意料，原因和第 3 題一樣：標準化與雜訊變異數都只是可逆的縮放，MD 會把它們抵消。
+
+PCA 則受尺度影響。Iris 第一主成分的變異數為 <<irispc1>>，以花瓣長度為主。$\sigma^2=0.05$ 時它是最大的特徵值；$\sigma^2=5$ 時前幾個特徵值都在 <<isp5lo>> 到 <<isp5hi>> 之間，全是雜訊（圖~5(c)）。PCA2 接 MD 在 $\sigma^2\le0.2$ 時都有 <<ipcamin02>>\% 以上，$\sigma^2=1$、2、5 時降為 <<ipca_1>>\%、<<ipca_2>>\%、<<ipca_5>>\%（圖~5(f)），正好對應 Iris 的方向被雜訊淹沒的過程。PCA 中不同 $\gamma$ 的曲線在 $k\le24$ 一樣完全重合（圖~5(e)）。
+
+LDA 與 rLDA 的比較見圖~5(f) 與表~2。50/50 時 rLDA（$\gamma=1$）在每個 $\sigma^2$ 都比 LDA 好，$\sigma^2=0.5$ 時為 <<irlda_05>>\% 對 <<ilda_05>>\%，只要 $\gamma>0$ 就高出約 20 個百分點。雜訊小時 PCA2 最好，$\sigma^2\ge2$ 之後 rLDA 最好（$\sigma^2=5$ 時 <<irlda_5>>\%），因為它靠標籤找方向，不需要 Iris 的方向剛好變異最大。直接在 104 維上用 MD 隨 $\sigma^2$ 下降得最快。20/80 時多數結果比 50/50 低，雜訊小時 LDA 反而略勝 rLDA（$\sigma^2=0.05$ 時 <<ilda20_005>>\% 對 <<irlda20_005>>\%）。
+
+\begin{table}[!htb]
+\caption{Iris（原始尺度，$q=100$）的測試準確率（\%，20 次重複的平均）。各方法最後都接 MD，104 維的 MD 使用擬反矩陣。}
+\centering\small
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{50/50} & \multicolumn{3}{c}{20/80}\\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+方法 & $\sigma^2=0.05$ & $\sigma^2=0.5$ & $\sigma^2=5$ & $\sigma^2=0.05$ & $\sigma^2=0.5$ & $\sigma^2=5$\\
+\midrule
+<<table2>>
+\bottomrule
+\end{tabular}
+\end{table}
+
+標準化不影響 MD 本身，對 PCA2 在雜訊小時反而不利，$\sigma^2=0.01$ 時從 <<ipca_001>>\% 降到 <<ipcaz_001>>\%。原始尺度下，最有區分力的花瓣長度變異數也最大（<<varpl>>），取 1 個主成分就有 <<ipca1_001>>\%，取 2 個為 <<ipca_001>>\%。標準化後四個特徵的變異數都是 1，區分力很弱的花萼寬度（類間與類內變異數比 <<fswidth>>，花瓣長度為 <<fplength>>）也被放大，第一主成分變成四個特徵的混合（係數 <<zload>>），取 1 或 2 個主成分都只有 <<ipcaz1_001>>\% 左右。
+
+\section{結果與預期}
+\noindent 多數結果符合講義的說法。維度增加時，要估計共變異數的 MD 最早失效，1-NN 下降較慢，訓練樣本愈少，問題出現得愈早。PCA 降維與 ridge 都能延後過度擬合。和我預期不同的地方都與縮放或小樣本估計有關。白化會讓 1-NN 變差，需要夠大的 $\gamma$ 才能挽回。PCA 中的 ridge、Iris 的標準化與雜訊變異數，在 $\hat\Sigma_c$ 可逆時完全不影響 MD。不加 ridge 的 LDA 在樣本少時比 PCA 差，因為 $S_w$ 的反矩陣放大了雜訊方向。\label{body-end}
+
+\clearpage
+\fancyhead[R]{\small 附錄　程式碼（不計入 5 頁）}
+\section*{附錄　程式碼}
+\noindent 在專案根目錄執行 \texttt{uv run homework1/PR\_HW1/pr\_hw1.py} 會重跑全部實驗並輸出圖檔（20 個 CPU 核心約 <<seconds>> 秒），\texttt{uv run homework1/PR\_HW1/check\_hw1.py} 執行數值檢查，\texttt{uv run homework1/PR\_HW1/build\_report.py} 從結果檔算出報告中的每個數字並排版。套件版本由專案根目錄的 \texttt{uv.lock} 固定：Python <<python>>、NumPy <<numpy>>、SciPy <<scipy>>、scikit-learn <<scikit_learn>>、Matplotlib <<matplotlib>>。報告中的數字都由以下程式實際執行產生。
+
+\lstset{language=Python,basicstyle=\ttfamily\fontsize{7.3}{8.7}\selectfont,numbers=left,numberstyle=\tiny\color{gray},
+  numbersep=6pt,xleftmargin=1.6em,breaklines=true,breakatwhitespace=false,columns=fullflexible,keepspaces=true,
+  showstringspaces=false,commentstyle=\color{black!60},keywordstyle=\bfseries,upquote=true,aboveskip=4pt}
+\subsection*{pr\_hw1.py}
+\lstinputlisting{../pr_hw1.py}
+\subsection*{check\_hw1.py}
+\lstinputlisting{../check_hw1.py}
+\subsection*{build\_report.py}
+\lstinputlisting{../build_report.py}
+\end{document}
