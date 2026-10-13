@@ -11,6 +11,13 @@ homework*/**/PR_HW*_*_[0-9]*.pdf
 # LaTeX build files
 homework*/PR_HW*/report/report.*
 
+# output of running the skeleton in place
+common/skeleton/results/
+
+# a new_homework.py or build_report.py run that was killed while writing
+homework*/.PR_HW*.part*/
+homework*/public/*.part
+
 # local only
 material/PR_Set*.md
 homework1/archive/

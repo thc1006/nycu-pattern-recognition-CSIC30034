@@ -1,0 +1,26 @@
+\documentclass{prhw}
+\assignment{N}
+\title{題目}
+\student{<<name>>}{<<sid>>}{<<email>>}
+\pagelimit{5}
+
+\begin{document}
+\maketitle
+
+% 各節照題目對報告的要求，HW1 是：方法、每題一節（結果、預期、原因）、最後一節結果與預期。每節第一段加 \noindent。
+\section{方法}
+\noindent 範例段落。樣本數從 <<n_first>> 增加到 <<n_last>> 時，樣本平均的絕對誤差從 <<err_first>> 降到 <<err_last>>（<<repeats>> 次平均，圖~\ref{fig:example}）。
+
+\begin{figure}[!htb]
+\centering\fig{fig1}
+\caption{範例圖：樣本平均的絕對誤差，<<repeats>> 次重複的平均。}\label{fig:example}
+\end{figure}
+
+\section{結果與預期}
+\noindent 範例段落。
+
+\codeappendix
+\noindent 在專案根目錄執行 \texttt{uv run homeworkN/PR\_HWN/pr\_hwN.py} 會重跑全部實驗（<<jobs>> 個行程平行，約 <<seconds>> 秒）並輸出圖檔，\texttt{uv run homeworkN/PR\_HWN/check\_hwN.py} 執行數值檢查，\texttt{uv run tools/build\_report.py N} 從結果檔算出報告中的每個數字並排版。Python 與套件版本由專案根目錄的 \texttt{.python-version} 與 \texttt{uv.lock} 固定：Python <<python>>、NumPy <<numpy>>、SciPy <<scipy>>、scikit-learn <<scikit_learn>>、Matplotlib <<matplotlib>>。報告中的數字都由以下程式實際執行產生。
+
+<<code>>
+\end{document}
