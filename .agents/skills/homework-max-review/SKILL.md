@@ -1,6 +1,6 @@
 ---
 name: homework-max-review
-description: Runs the strict pre-submission review of a finished homework assignment (code, saved results, figures and report PDF). Checks every requirement against the assignment text, the code against independent references, every number and claim against saved output, a rerun from a clean checkout that must match the saved results bit for bit, figures and captions, writing style, the page limit and the code appendix. Use before submitting any homework PDF, or when asked for a final, strict or deep review, 交件前檢查、嚴格審查、最終檢查、再審一次.
+description: Runs the strict pre-submission review of a finished homework assignment (code, saved results, figures and report PDF). Checks every requirement against the assignment text, the code against independent references, every number and claim against saved output, a rerun from a clean checkout that must match the saved results bit for bit, figures and captions, writing style, the page limit and the code appendix. Use before submitting any homework PDF (交件前檢查、嚴格審查、最終檢查).
 ---
 
 # 交件前審查
@@ -16,7 +16,7 @@ description: Runs the strict pre-submission review of a finished homework assign
 - 執行作業的檢查腳本 `uv run homeworkN/PR_HWN/check_hwN.py`。
 - 逐函式讀程式，對照講義公式：共變異數的分母、散布矩陣的權重、白化的縮放、ridge 加的位置、奇異時的處理、只用訓練集估計。
 - 找邊界情形：秩不足、全 NaN 欄位、類別順序、平手、亂數串流是否在不同方法間共用。
-- 再做一次獨立的 code review：交給沒看過這份程式的審查者從頭讀，只收能重現的錯誤。
+- 隔一段時間再從頭讀一次程式，只記下能重現的錯誤。
 
 ## 第 3 輪：乾淨重跑
 
@@ -38,11 +38,11 @@ cd "$root" && git worktree remove ../rerun
 - 報告數字全部由 `report_numbers.py` 從結果檔算出、`tools/build_report.py` 填入。用 `grep -nE '[0-9]' homeworkN/PR_HWN/report/template.tex` 列出樣板裡的每個數字，逐一確認是題號、檔名或常數。
 - 每一句定性敘述（誰比較好、何時重合、在哪裡最低）都要在 `report_numbers.py` 有對應的 assert，或有親手算出的數字；做不到就改寫或刪除。
 - 理論說明（例如不變性、秩的上界、隨機矩陣的特徵值範圍）用小實驗驗證一次。
-- 拿 PDF 和 `results.npz` 逐句核對，找出對不上的數字和推論過頭的句子；最好也交給另一位審查者核對一次。
+- 拿 PDF 和 `results.npz` 逐句核對，找出對不上的數字和推論過頭的句子。
 
 ## 第 5 輪：圖與 PDF
 
-- 逐頁檢視公開版 `homeworkN/public/PR_HWN_姓名.pdf`（可用 `pdftoppm -r 80 -png` 轉成圖片）：圖例不壓到曲線、標籤不被裁切、圖在正確的節附近、首頁標題在最上方。繳交版只差首頁的學號，`build_report.py` 已檢查過；它的檔名含學號，不必另外列出或轉圖。
+- 逐頁檢視公開版 `homeworkN/public/PR_HWN_姓名.pdf`：圖例不壓到曲線、標籤不被裁切、圖在正確的節附近、首頁標題在最上方。繳交版只多了首頁與 PDF 作者欄的學號，`build_report.py` 已檢查過。
 - 圖說只描述畫了什麼（資料、分割、重複次數、色帶意義），不放詮釋。
 - `uv run tools/build_report.py N` 沒有任何錯誤（它會跑 `tools/check_pdf.py` 的全部檢查）；附錄的程式就是實際執行的那份（`\codefile` 直接讀原檔）。
 

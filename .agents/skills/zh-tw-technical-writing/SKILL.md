@@ -1,6 +1,6 @@
 ---
 name: zh-tw-technical-writing
-description: Writes and revises Traditional Chinese (Taiwan) technical text, such as homework reports and READMEs, in a plain, factual style with Taiwan terminology. Use when drafting or editing 繁體中文報告、作業、說明文件, or when asked to 潤稿、寫得平實、少套話、改成台灣用語. The scanner tools/scan_zh_style.py flags formulaic phrasing, punctuation habits and mainland terms.
+description: Style rules for plain, factual Traditional Chinese (Taiwan) technical text with Taiwan terminology, such as homework reports and READMEs. Use when drafting or editing 繁體中文報告、作業、說明文件 (潤稿、台灣用語). tools/scan_zh_style.py flags formulaic phrasing, punctuation habits and mainland terms.
 ---
 
 # 繁體中文技術寫作
@@ -27,7 +27,7 @@ description: Writes and revises Traditional Chinese (Taiwan) technical text, suc
 11. 同一概念全文只用一個詞，第一次出現附英文（例：擬反矩陣（pseudo-inverse））。
 12. 改翻譯腔：對…進行、作為一種、通過…來、對於…來說、被…所。
 13. 用台灣用語（`references/terms.md`），例如資料、變異數、共變異數矩陣、擬反矩陣、雜訊、程式。
-14. 適度用第一人稱交代自己的選擇與預期：「我原本以為…，結果…，原因是…」。
+14. 自己做的選擇（例如 γ 的範圍、奇異時怎麼處理）用第一人稱寫，附上理由；結果和預期不同時，寫出原本的預期、量到的數字與原因。
 15. 寫完通讀一次，刪掉不影響理解的句子。
 
 完整清單與改寫範例：`references/checklist.md`。

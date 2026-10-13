@@ -1,6 +1,6 @@
 ---
 name: uv-locked-python
-description: Runs and manages Python in this repository through uv with exact version pins kept at the repo root (pyproject.toml, uv.lock, .python-version). Use whenever running a Python script, adding or upgrading a package, or writing run instructions in this repo, including requests like 用 uv 跑、加套件、鎖版本、pip install. Never use pip, python -m venv or requirements.txt here.
+description: Runs and manages Python in this repository through uv with exact version pins kept at the repo root (pyproject.toml, uv.lock, .python-version). Use whenever running a Python script, adding or upgrading a package, or writing run instructions in this repo (uv run、加套件、鎖版本). Never use pip, python -m venv or requirements.txt here.
 ---
 
 # uv 鎖定的 Python 環境

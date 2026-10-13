@@ -1,6 +1,6 @@
 ---
 name: xelatex-cjk-report
-description: Typesets the Traditional Chinese homework reports with XeLaTeX through the shared class common/prhw.cls and checks the PDF before submission. Covers the class interface (title block, figures, page limit, code appendix), Noto CJK TC font selection, matplotlib figures drawn at printed size, and the page, font and leftover-text checks that tools/build_report.py and tools/check_pdf.py run. Use when writing or fixing a report template or asked to 排版、修 LaTeX 錯誤、壓到頁數限制內, when a PDF shows Japanese glyph shapes, missing characters, missing minus signs or font warnings, or when the body must fit a page limit with an appendix after it.
+description: Typesets the Traditional Chinese homework reports with XeLaTeX through the shared class common/prhw.cls and checks the PDF before submission. Covers the class interface (title block, figures, page limit, code appendix), Noto CJK TC font selection, matplotlib figures drawn at printed size, and the page, font and leftover-text checks that tools/build_report.py and tools/check_pdf.py run. Use when writing or fixing a report template (排版、LaTeX 錯誤、頁數限制), when a PDF shows Japanese glyph shapes, missing characters, missing minus signs or font warnings, or when the body must fit a page limit with an appendix after it.
 ---
 
 # XeLaTeX 中文報告
@@ -35,7 +35,7 @@ description: Typesets the Traditional Chinese homework reports with XeLaTeX thro
 
 ## 字型
 
-TeX Live 的 OTF 字型不在 fontconfig 裡，要用檔名。Noto CJK 的 `.ttc` 內含多個地區字面，繁中的索引是 3，等寬繁中是 8；用 `.ttc` 檔名卻沒寫 `FontIndex` 時是索引 0，會拿到日文字形（例如「誤、戶、沒」的寫法不同）。`prhw.cls` 的設定：
+TeX Live 的 OTF 字型不在 fontconfig 裡，要用檔名。Noto CJK 的 `.ttc` 內含多個地區版本的字型，繁中的索引是 3，等寬繁中是 8；用 `.ttc` 檔名卻沒寫 `FontIndex` 時是索引 0，會拿到日文字形（例如「誤、戶、沒」的寫法不同）。`prhw.cls` 的設定：
 
 ```latex
 \setmainfont{STIXTwoText}[Extension=.otf,UprightFont=*-Regular,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic]
@@ -47,7 +47,7 @@ TeX Live 的 OTF 字型不在 fontconfig 裡，要用檔名。Noto CJK 的 `.ttc
 \setCJKmonofont{NotoSansCJK-Regular.ttc}[Path=/usr/share/fonts/opentype/noto/,FontIndex=8]
 ```
 
-`pdffonts` 顯示的 CJK 字型名稱都帶 jp（`NotoSerifCJKjp`、`NotoSansCJKjp`），因為各字面共用同一份 CFF，看名稱分不出繁中。要確認字形，就把「骨直誤戶沒」排出來用眼睛比對。
+`pdffonts` 顯示的 CJK 字型名稱都帶 jp（`NotoSerifCJKjp`、`NotoSansCJKjp`），因為各地區版本共用同一份 CFF，看名稱分不出繁中。要確認字形，就把「骨直誤戶沒」排出來用眼睛比對。
 
 ## 圖
 
@@ -71,8 +71,8 @@ uv run tools/check_pdf.py homeworkN/PR_HWN/report/report.pdf --aux homeworkN/PR_
     --max-pages 5 --require NAME
 ```
 
-建置後 `report/` 裡是公開版，學號只在 `homeworkN/submission/` 那份。`--max-pages` 要配 `--aux`，才知道正文在哪一頁結束。
+`report/` 裡只會有公開版（繳交版在暫存資料夾排版），學號只在 `homeworkN/submission/` 那份。`--max-pages` 要配 `--aux`，才知道正文在哪一頁結束。
 
-HW1 沒有用 `prhw.cls`，檢查它要加 `--label body-end`，並用 HW1 建置時留下的 `homework1/PR_HW1/report/report.aux`。這個檔案不進版控，只在建過 HW1 的機器上有；不要為了它重建 HW1，那會改寫已經推上去的公開版 PDF。沒有 aux 時整份都算正文，附錄的程式會被當成殘留的 LaTeX 指令。
+HW1 沒有用 `prhw.cls`，檢查它要加 `--label body-end`，並用 HW1 建置時留下的 `homework1/PR_HW1/report/report.aux`。這個檔案不進版控，只在建過 HW1 的機器上有；不要為了它重建 HW1，那會改寫已經推上去的公開版 PDF。真的重建了，用 `git restore homework1/public/` 還原。沒有 aux 時整份都算正文，附錄的程式會被當成殘留的 LaTeX 指令。
 
-檢查都沒有問題之後，逐頁看過公開版 `homeworkN/public/PR_HWN_姓名.pdf`（可用 `pdftoppm -r 80 -png` 轉成圖片）。繳交版只差首頁的學號，`build_report.py` 已檢查過；它的檔名含學號，不必另外列出或轉圖。
+檢查都沒有問題之後，逐頁看過公開版 `homeworkN/public/PR_HWN_姓名.pdf`。繳交版只多了首頁與 PDF 作者欄的學號，`build_report.py` 已檢查過。

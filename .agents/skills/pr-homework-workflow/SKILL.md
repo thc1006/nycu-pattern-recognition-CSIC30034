@@ -1,6 +1,6 @@
 ---
 name: pr-homework-workflow
-description: End-to-end workflow for an NYCU Pattern Recognition homework assignment in this repo, from the assignment text to the e3 PDF and the public PDF. Starts homeworkN/PR_HWN/ from common/skeleton with tools/new_homework.py, implements the methods in NumPy under uv, runs seeded repeated experiments in parallel, draws figures in the shared style, and builds the report with tools/build_report.py, which fills every number from saved results, enforces the page limit and keeps the student ID out of the public PDF. Use when starting, continuing or finishing an assignment (HW2, homework 3), or when asked to 開新作業、做 HW2、實作作業、寫報告、產生繳交 PDF.
+description: End-to-end workflow for an NYCU Pattern Recognition homework assignment in this repo, from the assignment text to the e3 PDF and the public PDF. Starts homeworkN/PR_HWN/ from common/skeleton with tools/new_homework.py, implements the methods in NumPy under uv, runs seeded repeated experiments in parallel, draws figures in the shared style, and builds the report with tools/build_report.py, which fills every number from saved results, enforces the page limit and keeps the student ID out of the public PDF. Use when starting, continuing or finishing an assignment (HW2, homework 3; 開新作業、實作、報告、繳交 PDF).
 ---
 
 # 圖形識別作業流程
@@ -15,16 +15,16 @@ uv run tools/new_homework.py N
 
 這會建立 `homeworkN/PR_HWN/`，檔名、import、路徑與 `\assignment{N}` 裡的 N 都換成這次的作業編號。接著：
 
-- 題目存成 `homeworkN/PR_HWN.pdf`，題目全文轉成 `homeworkN/PR_HWN_full_transcription.md`。`build_report.py` 從題目全文找 limited to N pages 讀出頁數限制；換了說法就找不到，只印出提示並沿用 `\pagelimit`。
+- 題目存成 `homeworkN/PR_HWN.pdf`，題目全文轉成 `homeworkN/PR_HWN_full_transcription.md`。`build_report.py` 從題目全文找 limited to N pages 讀出頁數限制；換了說法就找不到，只印出提示並沿用 `\pagelimit`。題目 PDF 有權限保護（`pdfinfo` 顯示 `Encrypted: yes`）時，掃描讀不了，commit 會被擋下；用 `pdftocairo -pdf 原檔.pdf homeworkN/PR_HWN.pdf` 另存一份沒有加密的。
 - 在 `report/template.tex` 填 `\title` 與 `\pagelimit`。
 - skeleton 的範例實驗、範例數字與範例段落全部換掉。
 
-修改 skeleton 時，作業編號寫成 N，並緊接在 homework、HW、hw 或 `\assignment{` 之後（例如 `PR_HWN`、`check_hwN`、`\assignment{N}`），或寫成 `build_report.py N`。其他地方只要有單獨的大寫 N（例如 `$N$`、`HW N`、變數 N），`new_homework.py` 就不會建立。
+修改 skeleton 時，作業編號寫成 N，並緊接在 homework、HW、hw 或 `\assignment{` 之後（例如 `PR_HWN`、`check_hwN`、`\assignment{N}`），或寫成 `build_report.py N`。其他地方只要有單獨的大寫 N（例如 `$N$`、`HW N`、變數 N），`new_homework.py` 就會停下，不寫任何檔案。
 
 ## 2. 讀題
 
 - 把題目的要求逐句列成清單，每列寫要求、我的做法、輸出的圖或數字，最後審查時逐列打勾。
-- 讀相關的講義頁（`material/pdf/`；本機另有逐頁文字版 `material/PR_Set0*.md`，不進版控），記下老師的定義與記號（例如 Mahalanobis 距離（MD）分類器用各類共變異數、`S_w=ΣP_iΣ_i`、ridge 寫成 `Σ+γI`）。
+- 讀相關的講義頁（`material/pdf/`；逐頁文字版 `material/PR_Set0*.md` 不進版控，只在原本的電腦上，換電腦要另外複製），記下老師的定義與記號（例如 Mahalanobis 距離（MD）分類器用各類共變異數、`S_w=ΣP_iΣ_i`、ridge 寫成 `Σ+γI`）。
 
 ## 3. 實作
 
@@ -52,6 +52,6 @@ uv run tools/new_homework.py N
   - `homeworkN/public/PR_HWN_姓名.pdf`：推上 GitHub，內文、中繼資料、檔名都沒有學號。
 - 姓名與信箱在根目錄的 `student.json`，學號只在被忽略的 `student.local.json`（見 `privacy-safe-commits`）。
 
-## 5. 交件前後
+## 5. 交件前
 
-照 `homework-max-review` 做完整審查，至少包含乾淨環境重跑、數字逐一比對與需求清單打勾。之後照 `privacy-safe-commits` 分批 commit 與推送。交件後打 tag 記下交出去的版本（`git tag -a hwN -m "HWN as submitted"`，再 `git push origin hwN`），日後改了 `common/` 或 `tools/` 也找得回當時的狀態。
+照 `homework-max-review` 做完整審查，至少包含乾淨環境重跑、數字逐一比對與需求清單打勾。之後照 `privacy-safe-commits` 分批 commit 與推送。
