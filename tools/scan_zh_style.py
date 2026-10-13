@@ -1,8 +1,11 @@
 """Flag formulaic phrasing, punctuation habits and mainland terms in Traditional Chinese text.
 
-Usage (repository root):  uv run .agents/skills/zh-tw-technical-writing/scripts/scan_zh_tells.py FILE [FILE ...]
+Usage (repository root):  uv run tools/scan_zh_style.py FILE [FILE ...]
 
-Works on .tex, .md and .txt. Math, LaTeX comments and command names are stripped first.
+Works on .tex, .md and .txt. In .tex files, code (\\verb, \\Verb, \\lstinline, \\mintinline and the verbatim,
+Verbatim, lstlisting and minted environments), URLs (\\url, \\href, \\path, \\nolinkurl), math ($…$, $$…$$, \\(…\\),
+\\[…\\] and environments such as align), LaTeX comments and command names are stripped first; line numbers still
+match the file.
 Every hit is a prompt to reread the sentence, not an automatic error.
 """
 import re
@@ -14,11 +17,10 @@ CLAUSE = r"[^。！？；\n]{0,30}"
 
 CHECKS = {
     "翻案句": [rf"不是{CLAUSE}而是", rf"並非{CLAUSE}而是", rf"與其說{CLAUSE}不如說", r"不只是",
-             rf"不僅{CLAUSE}(更|還|也)", rf"不是{CLAUSE}，是"],
-    "防禦性否定": [r"，不是", r"而非", r"並不(表示|代表|意味)", r"不代表", r"不能(把|當作|當成|說成|視為)", r"冒稱",
-               r"沒有偷偷", r"不要誤"],
+             rf"不僅{CLAUSE}(更|還|也)", rf"不是{CLAUSE}，是", r"，不是", r"而非", r"而不是"],
+    "防禦性否定": [r"並不(表示|代表|意味)", r"不代表", r"不能(把|當作|當成|說成|視為)", r"冒稱", r"沒有偷偷", r"不要誤"],
     "路標詞": [r"值得(注意|一提)的是", r"需要(指出|注意)的是", r"更重要的是", r"關鍵在於", r"重要的是"],
-    "套話與復述": [r"這意味著", r"換句話說", r"由此可見", r"綜上所述", r"總的來說", r"總而言之", r"總結來說",
+    "套話與複述": [r"這意味著", r"換句話說", r"由此可見", r"綜上所述", r"總的來說", r"總而言之", r"總結來說",
               r"簡而言之", r"隨著.{0,15}(發展|進步|普及)", r"在.{0,20}的背景下", r"讓我們", r"以下是",
               r"本(文|報告)將"],
     "誇飾與黑話": [r"至關重要", r"不可或缺", r"意義重大", r"深入探討", r"深度剖析", r"全方位", r"多維度", r"無縫",
@@ -35,11 +37,38 @@ CHECKS = {
 }
 
 
+MATH_ENV = r"equation|align|alignat|gather|multline|flalign|eqnarray|displaymath|math"
+CODE_ENV = r"verbatim|Verbatim|BVerbatim|LVerbatim|lstlisting|minted"
+# One left-to-right pass over code, URLs, line breaks and comments: whichever starts first wins, so a comment that
+# mentions \begin{verbatim} stays a comment and a % or $ inside code stays code. Only code environments cross lines.
+FIRST = re.compile(
+    rf"(?P<env>\\begin\{{({CODE_ENV})(\*?)\}}(?s:.*?)\\end\{{\2\3\}})"
+    r"|\\lstinline(?:\[[^]\n]*\])?\{[^}\n]*\}"
+    r"|\\mintinline(?:\[[^]\n]*\])?\{[^}\n]*\}(?:\{[^}\n]*\}|(?P<md>[^\w\s{])[^\n]*?(?P=md))"
+    r"|\\(?:verb|Verb|lstinline)\*?(?:\[[^]\n]*\])?(?P<d>[^\w\s{])[^\n]*?(?P=d)"
+    r"|\\(?:url|href|nolinkurl|path)\{(?:[^{}\n]|\{[^{}\n]*\})*\}"
+    r"|\\\\(?:\[[^]\n]*\])?"  # a line break, so \\[2pt], \\$ and \\% are not misread
+    r"|(?P<pct>\\%)"
+    r"|%[^\n]*")
+
+
+def blank(m):
+    """A removed span keeps its line breaks, so the reported line numbers stay right."""
+    return " " + "\n" * m.group().count("\n")
+
+
+def first_pass(m):
+    if m.group("pct"):
+        return m.group()  # an escaped percent is text
+    return blank(m) if m.group("env") else " "
+
+
 def strip_latex(text):
-    text = re.sub(r"(?<!\\)%.*", "", text)
-    text = re.sub(r"\\\[.*?\\\]", " ", text, flags=re.S)
-    text = re.sub(r"\$[^$]*\$", " ", text)
-    text = re.sub(r"\\(begin|end)\{[^}]*\}(\[[^]]*\])?", " ", text)
+    text = FIRST.sub(first_pass, text)
+    text = re.sub(rf"\\begin\{{({MATH_ENV})(\*?)\}}.*?\\end\{{\1\2\}}", blank, text, flags=re.S)
+    for math in (r"\$\$.*?\$\$", r"\\\[.*?\\\]", r"\\\(.*?\\\)", r"(?<!\\)\$[^$]*\$"):
+        text = re.sub(math, blank, text, flags=re.S)
+    text = re.sub(r"\\(begin|end)\{[^}\n]*\}(\[[^]\n]*\])?", " ", text)
     text = re.sub(r"\\[a-zA-Z@]+\*?", " ", text)
     return text
 
