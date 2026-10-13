@@ -1,8 +1,8 @@
 # PR HW1 程式與報告
 
-報告在 `../public/PR_HW1_蔡秀吉.pdf`，前 4 頁是正文，第 5 頁起是程式附錄。這是公開版，內文、PDF 中繼資料和檔名都沒有學號。
+報告在 [`../public/PR_HW1_蔡秀吉.pdf`](../public/PR_HW1_蔡秀吉.pdf)，前 4 頁是正文，第 5 頁起是程式附錄。這是公開版，內文、PDF 中繼資料和檔名都沒有學號。
 
-交到 e3 的版本只留在本機：在這個資料夾放一個 `student.local.json`（內容為 `{"student_id": "你的學號"}`），`build_report.py` 會另外產生 `../submission/PR_HW1_蔡秀吉_<學號>.pdf`，首頁和 PDF 作者欄多了學號。`student.local.json` 和 `submission/` 都在 `.gitignore` 裡。
+交到 e3 的版本只留在本機：在這個資料夾放一個 `student.local.json`（內容為 `{"student_id": "你的學號"}`），`build_report.py` 會另外產生 `../submission/PR_HW1_蔡秀吉_<學號>.pdf`，首頁和 PDF 作者欄多了學號。`../submission/` 資料夾要先建立；這個腳本會在終端機印出含學號的檔名。`student.local.json` 和 `submission/` 都在 `.gitignore` 裡。
 
 ## 執行
 
@@ -15,6 +15,8 @@ uv run homework1/PR_HW1/build_report.py   # 填入數字、XeLaTeX 排版，輸�
 ```
 
 只想重畫圖：`uv run homework1/PR_HW1/pr_hw1.py --plots-only`。排版需要 XeLaTeX，以及 Noto Serif/Sans CJK、STIX Two、Inconsolata 字型。
+
+`pr_hw1.py` 會改寫 `results/` 的圖檔與 `run_info.json`，`build_report.py` 會改寫 `../public/` 的 PDF；數字沒變，檔案裡的日期與耗時也會不同。只想確認結果能重現時，照根目錄 README 的 HW1 一節把結果寫到 repo 外。不要的改動用 `git restore homework1/PR_HW1/results/ homework1/public/` 還原。
 
 ## 檔案
 
