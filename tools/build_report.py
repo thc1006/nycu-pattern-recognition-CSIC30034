@@ -38,7 +38,7 @@ HIDE = set()  # values from *.local.json, masked in everything this script print
 
 def say(message):
     """message with every *.local.json value masked, and any run of 4+ letters or digits that is part of one
-    (a check's context window can cut the ID in half)."""
+    (check_pdf.py quotes 20 characters around each hit, which can cut the ID in half)."""
     message = scan_private.mask(message, HIDE, "<ID>")
     parts = [scan_private.folded(s) for s in HIDE]
     return re.sub(r"[0-9A-Za-z]{4,}", lambda m: "<ID>" if any(m.group().casefold() in p for p in parts) else m.group(),
@@ -95,6 +95,8 @@ def student():
     sid = str(sid).strip()
     if not re.fullmatch(r"[0-9A-Za-z]*", sid):
         fail("student_id in student.local.json must be letters and digits only")
+    if 0 < len(sid) < scan_private.MIN_SECRET:
+        fail(f"student_id in student.local.json is shorter than {scan_private.MIN_SECRET} characters, too short to check for")
     return name, email, sid
 
 
@@ -158,44 +160,47 @@ def stated_limit(transcription):
     return None
 
 
-def typeset(report):
-    """Run xelatex until it stops asking for a rerun; return the final log."""
+def typeset(report, out):
+    """Run xelatex on out/report.tex until it stops asking for a rerun; return the final log. It runs in report/, so
+    the template's ../ paths hold wherever out is."""
     # report/ first and common/ only for prhw.cls; long log lines so paths and warnings are not wrapped
     env = {**os.environ, "TEXINPUTS": f".:{ROOT / 'common'}:", "max_print_line": "10000"}
+    cmd = ["xelatex", "-interaction=nonstopmode", "-halt-on-error"]
+    cmd += ["report.tex"] if out == report else [f"-output-directory={out}", str(out / "report.tex")]
     for _ in range(MAX_RUNS):
         try:
-            run = subprocess.run(["xelatex", "-interaction=nonstopmode", "-halt-on-error", "report.tex"],
-                                 cwd=report, env=env, capture_output=True, text=True, errors="replace")
+            run = subprocess.run(cmd, cwd=report, env=env, capture_output=True, text=True, errors="replace")
         except FileNotFoundError:
             fail("xelatex not found")
-        log_file = report / "report.log"
+        log_file = out / "report.log"
         log = log_file.read_text(errors="replace") if log_file.exists() else ""
         if run.returncode:
             errors = [line for line in log.splitlines() if line.startswith("!")] or run.stdout.splitlines()[-10:]
-            fail(f"xelatex stopped, see {log_file}:\n  " + "\n  ".join(errors[:5]))
+            where = f", see {log_file}" if out == report else " on the e3 copy (typeset in a temporary folder)"
+            fail(f"xelatex stopped{where}:\n  " + "\n  ".join(errors[:5]))
         if not re.search(r"Rerun to get|Label\(s\) may have changed", log):
             return log
     fail(f"cross-references still changing after {MAX_RUNS} xelatex runs")
 
 
-def build(report, tex, require, stated, label):
-    """Typeset tex in report/ and check the result; return (pages, last body page, page limit)."""
-    (report / "report.pdf").unlink(missing_ok=True)  # a run that writes no PDF must not leave the last one behind
-    (report / "report.tex").write_text(tex)
-    log = typeset(report)
-    if not (report / "report.pdf").exists():
+def build(report, out, tex, require, stated, label):
+    """Typeset tex into out/ and check the result; return (pages, last body page, page limit)."""
+    (out / "report.pdf").unlink(missing_ok=True)  # a run that writes no PDF must not leave the last one behind
+    (out / "report.tex").write_text(tex)
+    log = typeset(report, out)
+    if not (out / "report.pdf").exists():
         fail(f"{label}: xelatex wrote no PDF")
     problems = [f"log: {line.strip()}" for line in log.splitlines() if LOG_PROBLEM.search(line)]
     if f"({ROOT / 'common' / 'prhw.cls'}" not in log:
         problems.append("the report did not load common/prhw.cls; a prhw.cls next to report.tex shadows it")
-    aux = (report / "report.aux").read_text(errors="replace")
+    aux = (out / "report.aux").read_text(errors="replace")
     found = re.findall(r"\\newlabel\{prhw@body-end\}\{\{(\d+)\}\{(\d+)\}", aux)
     if len(found) != 1:
         fail(f"{label}: label prhw@body-end appears {len(found)} times in report.aux, expected once")
     limit, body = map(int, found[0])
     if stated is not None and limit != stated:
         problems.append(f"\\pagelimit{{{limit}}} in the template, but the assignment allows {stated} pages")
-    pages, _, more = check_pdf.check(report / "report.pdf", report / "report.aux", "prhw@body-end", limit, require)
+    pages, _, more = check_pdf.check(out / "report.pdf", out / "report.aux", "prhw@body-end", limit, require)
     if problems + more:
         fail(f"{label}:\n  " + "\n  ".join(problems + more))
     return pages, body, limit
@@ -210,9 +215,13 @@ def main():
     if not (report / "template.tex").exists():
         fail(f"homework{n}/PR_HW{n}/report/template.tex not found; start with uv run tools/new_homework.py {n}")
     template = (report / "template.tex").read_text()
-    assigned = re.findall(r"\\assignment\s*\{\s*(\d+)\s*\}", "\n".join(code_and_comment(l)[0] for l in template.split("\n")))
+    code_only = "\n".join(code_and_comment(l)[0] for l in template.split("\n"))
+    assigned = re.findall(r"\\assignment\s*\{\s*(\d+)\s*\}", code_only)
     if [int(a) for a in assigned] != [n]:
         fail(f"template.tex sets \\assignment to {assigned or 'nothing'}, but this is homework {n}")
+    if len(re.findall(r"\\student\b", code_only)) != 1 or not re.search(
+            r"\\student\s*\{\s*<<name>>\s*\}\s*\{\s*<<sid>>\s*\}\s*\{\s*<<email>>\s*\}", code_only):
+        fail("template.tex must have \\student{<<name>>}{<<sid>>}{<<email>>} once: the ID comes from student.local.json")
     name, email, sid = student()
     secrets = scan_private.local_secrets(ROOT) | ({sid} if sid else set())
     HIDE.update(secrets)
@@ -242,23 +251,26 @@ def main():
     if sid and in_git and git("check-ignore", "-q", str(e3)) is None:
         fail(f"git would not ignore {e3.relative_to(ROOT)}; keep homework*/submission/ in .gitignore")
 
-    copies = ([(sid, e3)] if sid else []) + [("", public)]  # the e3 copy first, so report/ ends with the public build
+    copies = ([(sid, e3)] if sid else []) + [("", public)]
     with tempfile.TemporaryDirectory() as tmp:
         built = []
         for this_sid, dest in copies:
+            out = Path(tmp) / "e3" if this_sid else report  # report/ only ever holds the public build
+            out.mkdir(exist_ok=True)
             tex = fill(template, {**values, "sid": this_sid})
             if left := sorted({k for line in tex.split("\n") for k in re.findall(r"<<[^<>\n]*>>", code_and_comment(line)[0])}):
                 fail(f"placeholders left after filling: {left}")
-            pages, body, limit = build(report, tex, [name, this_sid] if this_sid else [name], stated, dest.name)
+            pages, body, limit = build(report, out, tex, [name, this_sid] if this_sid else [name], stated, dest.name)
             kept = Path(tmp) / dest.name
-            shutil.copyfile(report / "report.pdf", kept)
+            shutil.copyfile(out / "report.pdf", kept)
             built.append((kept, dest, f"{pages} pages, body ends on page {body} (limit {limit})"))
         if secrets:  # nothing is written until the public copy and everything git would push are clean
             files = [built[-1][0]] + [f for f in report.iterdir() if f.is_file() and f.suffix != ".log"]
             listed = git("ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", str(hw.parent))
             paths = [ROOT / f for f in (listed or "").split("\0") if f]
             files += [f for f in paths if f.is_file() and not f.is_symlink() and f != public]
-            hits = sorted({f"{f.name} ({where})" for f in files for s in secrets for where in scan_private.leaks(f, s)})
+            hits = sorted({scan_private.shown(f"{f.relative_to(ROOT) if f.is_relative_to(ROOT) else f.name} ({where})",
+                                              secrets, "<ID>") for f in files for s in secrets for where in scan_private.leaks(f, s)})
             hits += [f"{f.relative_to(ROOT)} (file name or link target)" for f in paths
                      if scan_private.in_name(f"{f.relative_to(ROOT)}\n{os.readlink(f) if f.is_symlink() else ''}", secrets)]
             if hits:
@@ -285,6 +297,8 @@ def main():
               "(staged and committed versions: run tools/scan_private.py)")
     else:
         print("public copy and its build files: no value from *.local.json (not a git work tree, pushable files unchecked)")
+    if secrets and in_git and not scan_private.hooks_active(ROOT):
+        print("note: the git hooks are not active in this clone; run uv run tools/scan_private.py --install-hooks")
 
 
 if __name__ == "__main__":
