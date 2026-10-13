@@ -1,0 +1,44 @@
+# Figure style for the homework reports, taken from HW1. Draw figures at printed size: 6.85 in is the full text width.
+# Use with plt.style.use(ROOT / "common" / "prhw.mplstyle"). Colors are written without the leading #.
+# Noto Sans has no Chinese and no minus sign (U+2212). Keep figure text in English, and give log axes plain labels
+# (plain_log_ticks in the skeleton), because the default 10^{-1} labels need U+2212.
+# The grid is drawn above images: call ax.grid(False) on axes that use imshow or matshow.
+
+font.family: Noto Sans, DejaVu Sans  # DejaVu Sans fills in symbols such as ≤ ∞ → that Noto Sans lacks
+font.sans-serif: Noto Sans, DejaVu Sans  # for code that asks for family="sans-serif"
+axes.unicode_minus: False  # an ASCII minus keeps tick labels in Noto Sans
+mathtext.fontset: dejavusans
+font.size: 7
+axes.titlesize: 7
+axes.labelsize: 7
+xtick.labelsize: 6.5
+ytick.labelsize: 6.5
+legend.fontsize: 6.3
+text.color: 0b0b0b
+axes.labelcolor: 52514e
+xtick.color: 898781
+ytick.color: 898781
+axes.edgecolor: c3c2b7
+axes.linewidth: 0.6
+axes.spines.top: False
+axes.spines.right: False
+axes.grid: True
+grid.color: e1e0d9
+grid.linewidth: 0.5
+axes.axisbelow: True
+axes.titlelocation: left
+axes.titlepad: 3
+lines.linewidth: 1.1
+legend.frameon: False
+legend.handlelength: 1.8
+legend.borderaxespad: 0.3
+legend.labelspacing: 0.3
+legend.columnspacing: 0.9
+xtick.major.size: 2
+ytick.major.size: 2
+pdf.fonttype: 42
+savefig.dpi: 300
+
+figure.figsize: 6.85, 2.4
+# Blue, orange, aqua, violet, yellow, magenta, green. Aqua and yellow are light on white, so keep a legend.
+axes.prop_cycle: cycler('color', ['2a78d6', 'eb6834', '1baf7a', '6250d6', 'eda100', 'd55181', '008300'])
