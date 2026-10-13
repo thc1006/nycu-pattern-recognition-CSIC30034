@@ -19,14 +19,14 @@ Your program/report should include the following:
    - Class 3 mean: $\mu_3 = [0, -2, 0]^T$
    - Shared within-class covariance in signal dimensions:
 
-     $$
+     ```math
      \Sigma_{\text{signal}} =
      \begin{bmatrix}
      1.0 & 0.6 & 0.0 \\
      0.6 & 1.5 & 0.0 \\
      0.0 & 0.0 & 0.5
      \end{bmatrix}.
-     $$
+     ```
 
 3. **Noise Subspace ($d_{\text{noise}}$ variable):**
 
